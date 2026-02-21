@@ -1,5 +1,5 @@
 import sys
-from builtin_commands import *
+from app.builtin_commands import *
 
 
 def main():
