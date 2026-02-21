@@ -1,5 +1,6 @@
 from enum import Enum
 from sys import exit
+import os
 
 
 class BuiltinCommands(Enum):
@@ -36,6 +37,23 @@ def shell_type(args: list[str]):
         if cmd in [bc.value for bc in BuiltinCommands]:
             print(f"{cmd} is a shell builtin")
         else:
-            # TODO handle other commands
+            found = False
+            # not a builtin; check for executable file inside all directories of $PATH
+            path_var: list[str] = str(os.environ.get("PATH", [])).split(os.pathsep)
+            for a_path in path_var:
+                try:
+                    if cmd in os.listdir(a_path) and os.access(
+                        f"{a_path}/{cmd}", os.X_OK
+                    ):
+                        # check if file is executable
+                        print(f"{cmd} is {a_path}/{cmd}")
+                        found = True
+                        break
+
+                except FileNotFoundError:
+                    # path not on disk; continue
+                    continue
+
             # Unknown command
-            print(f"{cmd}: not found")
+            if not found:
+                print(f"{cmd}: not found")
