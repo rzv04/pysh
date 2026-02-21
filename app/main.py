@@ -1,5 +1,5 @@
 import sys
-from app.builtin_commands import *
+import app.builtin_commands as bc
 
 
 def main():
@@ -7,16 +7,24 @@ def main():
     while True:
         sys.stdout.write("$ ")
         # read user input
-        cmd = input()
+        full_cmd = input().strip().split()
+
+        # extract its args
+        cmd: str = full_cmd[0] if full_cmd else ""
+        args: list[str] = full_cmd[1:] if len(full_cmd) >= 2 else []
+
         # TODO handle all types of commands
+        handle_builtin_commands(cmd, args)
         # handle_invalid_command(cmd)
-        handle_builtin_commands(cmd)
 
 
-def handle_builtin_commands(cmd: str):
+def handle_builtin_commands(cmd: str, args: list[str]):
+
     match cmd:
-        case BuiltinCommands.EXIT.value:
-            shell_exit()
+        case bc.BuiltinCommands.EXIT.value:
+            bc.shell_exit()
+        case bc.BuiltinCommands.ECHO.value:
+            bc.shell_echo(args)
         case _:
             handle_invalid_command(cmd)
 
