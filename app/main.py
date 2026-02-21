@@ -3,11 +3,17 @@ import sys
 
 def main():
     # begin repl with unprivileged user tag
-    sys.stdout.write("$ ")
-    # read user input
-    cmd = input()
+    while True:
+        sys.stdout.write("$ ")
+        # read user input
+        cmd = input()
+        # TODO handle all types of commands
+        handle_invalid_command(cmd)
+
+
+def handle_invalid_command(cmd: str):
     print(f"{cmd}: command not found")
-    
+
 
 if __name__ == "__main__":
     main()
