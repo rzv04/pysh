@@ -25,6 +25,8 @@ def handle_builtin_commands(cmd: str, args: list[str]):
             bc.shell_exit()
         case bc.BuiltinCommands.ECHO.value:
             bc.shell_echo(args)
+        case bc.BuiltinCommands.TYPE.value:
+            bc.shell_type(args)
         case _:
             handle_invalid_command(cmd)
 

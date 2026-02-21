@@ -6,6 +6,7 @@ class BuiltinCommands(Enum):
     CD = "cd"
     EXIT = "exit"
     ECHO = "echo"
+    TYPE = "type"
 
 
 def shell_exit():
@@ -22,3 +23,19 @@ def shell_echo(args: list[str]):
 
     to_print = " ".join(args)
     print(to_print)
+
+
+def shell_type(args: list[str]):
+    """(Partially) Emulates a shell's 'type' builtin command.
+
+    Args:
+        args (str): List of arguments, denoting the sequence of commands to be tested.
+    """
+
+    for cmd in args:
+        if cmd in [bc.value for bc in BuiltinCommands]:
+            print(f"{cmd} is a shell builtin")
+        else:
+            # TODO handle other commands
+            # Unknown command
+            print(f"{cmd}: not found")
