@@ -85,7 +85,7 @@ def shell_exec(cmd_abs_path: str, args: list[str]):
         pid = os.fork()
         if pid == 0:
             # child process
-            os.execvp(cmd_abs_path, args)
+            os.execvp(cmd_abs_path, [cmd_abs_path] + args)  # args[0] is cmd name
 
         else:
             os.waitpid(pid, 0)
