@@ -42,7 +42,7 @@ def handle_external_command(cmd: str, args: list[str]):
         cmd_abs_path = bc.search_for_cmd_file(cmd)
 
     if cmd_abs_path:
-        bc.shell_exec(cmd_abs_path, args)
+        bc.shell_exec(cmd_abs_path, [cmd] + args)  # args[0] is cmd name
     else:
         handle_invalid_command(cmd)
 
