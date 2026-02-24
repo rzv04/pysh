@@ -93,4 +93,13 @@ def shell_exec(cmd_abs_path: str, args: list[str]):
 
 
 def shell_pwd():
+    """Prints the shell's current working directory."""
     print(os.getcwd())
+
+
+def shell_cd(path: str | bytes | os.PathLike[str] | os.PathLike[bytes]):
+    expanded_path = os.path.expanduser(path)
+    try:
+        os.chdir(expanded_path)
+    except OSError:
+        print(f"cd: {expanded_path}: No such file or directory")

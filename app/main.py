@@ -30,8 +30,10 @@ def handle_builtin_command(cmd: str, args: list[str]) -> bool:
         case bc.BuiltinCommands.TYPE.value:
             bc.shell_type(args)
         case bc.BuiltinCommands.PWD.value:
-            bc.shell_pwd()            
-            
+            bc.shell_pwd()
+        case bc.BuiltinCommands.CD.value:
+            bc.shell_cd(args[0])
+
         case _:
             return False
     return True
