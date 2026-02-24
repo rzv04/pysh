@@ -9,6 +9,7 @@ class BuiltinCommands(Enum):
     ECHO = "echo"
     TYPE = "type"
     EXEC = "exec"
+    PWD = "pwd"
 
 
 def shell_exit():
@@ -89,3 +90,7 @@ def shell_exec(cmd_abs_path: str, args: list[str]):
 
         else:
             os.waitpid(pid, 0)
+
+
+def shell_pwd():
+    print(os.getcwd())

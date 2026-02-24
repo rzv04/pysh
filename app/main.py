@@ -14,11 +14,13 @@ def main():
         args: list[str] = full_cmd[1:] if len(full_cmd) >= 2 else []
 
         # TODO handle all types of commands
-        handle_builtin_command(cmd, args)
-        # handle_invalid_command(cmd)
+        if not handle_builtin_command(cmd, args) and not handle_external_command(
+            cmd, args
+        ):
+            handle_invalid_command(cmd)
 
 
-def handle_builtin_command(cmd: str, args: list[str]):
+def handle_builtin_command(cmd: str, args: list[str]) -> bool:
 
     match cmd:
         case bc.BuiltinCommands.EXIT.value:
@@ -27,13 +29,15 @@ def handle_builtin_command(cmd: str, args: list[str]):
             bc.shell_echo(args)
         case bc.BuiltinCommands.TYPE.value:
             bc.shell_type(args)
-        case bc.BuiltinCommands.EXEC.value:
-            handle_external_command(cmd, args)
+        case bc.BuiltinCommands.PWD.value:
+            bc.shell_pwd()            
+            
         case _:
-            handle_external_command(cmd, args)
+            return False
+    return True
 
 
-def handle_external_command(cmd: str, args: list[str]):
+def handle_external_command(cmd: str, args: list[str]) -> bool:
     is_exec_cmd = "exec" in cmd
     if is_exec_cmd:
         # actual command should be the second word
@@ -44,7 +48,9 @@ def handle_external_command(cmd: str, args: list[str]):
     if cmd_abs_path:
         bc.shell_exec(cmd_abs_path, [cmd] + args)  # args[0] is cmd name
     else:
-        handle_invalid_command(cmd)
+        # handle_invalid_command(cmd)
+        return False
+    return True
 
 
 def handle_invalid_command(cmd: str):
