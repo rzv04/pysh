@@ -2,6 +2,28 @@ import sys
 import app.builtin_commands as bc
 
 
+def preprocess_args(args: list[str]) -> list[str]:
+    if not args:
+        return []
+
+    new_args = [""] * len(args)
+
+    def remove_quotes(s: str) -> str:
+        try:
+            l = s.index("'")
+            r = s.rindex("'")
+            return s[0:l] + s[l + 1 : r] + s[r + 1 :]
+        except ValueError:
+            return s
+
+    for i, arg in enumerate(args):
+        while arg != remove_quotes(arg):
+            arg = remove_quotes(arg)
+        new_args[i] = arg
+
+    return new_args
+
+
 def main():
     # begin repl with unprivileged user tag
     while True:
@@ -11,7 +33,7 @@ def main():
 
         # extract its args
         cmd: str = full_cmd[0] if full_cmd else ""
-        args: list[str] = full_cmd[1:] if len(full_cmd) >= 2 else []
+        args: list[str] = preprocess_args(full_cmd[1:]) if len(full_cmd) >= 2 else []
 
         # TODO handle all types of commands
         if not handle_builtin_command(cmd, args) and not handle_external_command(
@@ -32,7 +54,7 @@ def handle_builtin_command(cmd: str, args: list[str]) -> bool:
         case bc.BuiltinCommands.PWD.value:
             bc.shell_pwd()
         case bc.BuiltinCommands.CD.value:
-            bc.shell_cd(args[0])
+            bc.shell_cd(args[0] if args else "")
 
         case _:
             return False
