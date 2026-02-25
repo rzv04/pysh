@@ -1,12 +1,15 @@
 import sys
 import app.builtin_commands as bc
+import re
+import logging
 
 
-def preprocess_args(args: list[str]) -> list[str]:
-    if not args:
+def preprocess_args(args_str: str) -> list[str]:
+    if not args_str:
         return []
 
-    new_args = [""] * len(args)
+    # TODO change special meanings for chars inside ""
+    args = [match.group(0) for match in re.finditer(r"'.*'|[^\s]+", args_str)]
 
     def remove_quotes(s: str) -> str:
         try:
@@ -19,9 +22,9 @@ def preprocess_args(args: list[str]) -> list[str]:
     for i, arg in enumerate(args):
         while arg != remove_quotes(arg):
             arg = remove_quotes(arg)
-        new_args[i] = arg
+        args[i] = arg
 
-    return new_args
+    return args
 
 
 def main():
@@ -29,11 +32,13 @@ def main():
     while True:
         sys.stdout.write("$ ")
         # read user input
-        full_cmd = input().strip().split()
+        full_cmd = input()
 
+        preprocessed_input = preprocess_args(full_cmd)
+        logging.log(level=logging.INFO, msg=preprocessed_input)
         # extract its args
-        cmd: str = full_cmd[0] if full_cmd else ""
-        args: list[str] = preprocess_args(full_cmd[1:]) if len(full_cmd) >= 2 else []
+        cmd: str = preprocessed_input[0] if preprocessed_input else ""
+        args: list[str] = preprocessed_input[1:] if len(preprocessed_input) >= 2 else []
 
         # TODO handle all types of commands
         if not handle_builtin_command(cmd, args) and not handle_external_command(

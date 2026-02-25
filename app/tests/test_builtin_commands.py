@@ -100,17 +100,17 @@ class TestBuiltinCommands(unittest.TestCase):
 
     def test_preprocess_args(self):
         with self.subTest("test simple single quoted arg"):
-            args = ["'hello  world'"]
+            args = "'hello  world'"
             processed_args = preprocess_args(args)
             self.assertEqual(processed_args, ["hello  world"])
 
         with self.subTest("test no quoted arg"):
-            args = ["hello", "world"]
+            args = "hello world"
             processed_args = preprocess_args(args)
             self.assertEqual(processed_args, ["hello", "world"])
 
         with self.subTest("test quoted arg with double quotes inside"):
-            args = ["\'hello\'\'world\'"]
+            args = "'hello''world'"
             processed_args = preprocess_args(args)
             self.assertEqual(processed_args, ["helloworld"])
 
