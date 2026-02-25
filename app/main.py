@@ -31,6 +31,7 @@ def preprocess_args(args_str: str) -> list[str]:
 
 
 def main():
+
     # begin repl with unprivileged user tag
     while True:
         sys.stdout.write("$ ")
@@ -43,11 +44,46 @@ def main():
         cmd: str = preprocessed_input[0] if preprocessed_input else ""
         args: list[str] = preprocessed_input[1:] if len(preprocessed_input) >= 2 else []
 
-        # TODO handle all types of commands
+        # Redirect streams
+        if ">" in args or "1>" in args:
+            # get first file path that is after the '>' character
+            out_file_path = args[-1] if args else ""
+            try:
+                # TODO
+                sys.stdout = open(out_file_path, "w")
+            except FileNotFoundError:
+                pass
+            # cut args to before token
+            try:
+                args = args[: args.index(">")]
+                args = args[: args.index("1>")]
+            except ValueError:
+                pass
+
+        if "2>" in args:
+            # get first file path that is after the '>' character
+            out_file_path = args[-1] if args else ""
+            # TODO redirect stderr
+            try:
+                sys.stderr = open(out_file_path, "w")
+            except FileNotFoundError:
+                pass
+
         if not handle_builtin_command(cmd, args) and not handle_external_command(
             cmd, args
         ):
             handle_invalid_command(cmd)
+
+        # restore io
+        if sys.stdout != sys.__stdout__:
+            if sys.stdout:
+                sys.stdout.close()
+            sys.stdout = sys.__stdout__
+
+        if sys.stderr != sys.__stderr__:
+            if sys.stderr:
+                sys.stderr.close()
+            sys.stderr = sys.__stderr__
 
 
 def handle_builtin_command(cmd: str, args: list[str]) -> bool:
