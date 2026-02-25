@@ -2,14 +2,17 @@ import sys
 import app.builtin_commands as bc
 import re
 import logging
+import warnings
+import shlex
 
 
+@warnings.deprecated("s")
 def preprocess_args(args_str: str) -> list[str]:
     if not args_str:
         return []
 
     # TODO change special meanings for chars inside ""
-    args = [match.group(0) for match in re.finditer(r"'.*'|[^\s]+", args_str)]
+    args = [match.group(0) for match in re.finditer(r"'.*'|\".*\"|[^\s]+", args_str)]
 
     def remove_quotes(s: str) -> str:
         try:
@@ -34,7 +37,7 @@ def main():
         # read user input
         full_cmd = input()
 
-        preprocessed_input = preprocess_args(full_cmd)
+        preprocessed_input = shlex.split(full_cmd)
         logging.log(level=logging.INFO, msg=preprocessed_input)
         # extract its args
         cmd: str = preprocessed_input[0] if preprocessed_input else ""
