@@ -6,7 +6,6 @@ import warnings
 import shlex
 import os
 from app.completion import ShellCompleter
-import rlcompleter
 import readline
 
 
