@@ -31,6 +31,90 @@ def preprocess_args(args_str: str) -> list[str]:
     return args
 
 
+def redirect_stdout(args: list[str], redirects: dict[str, int]):
+    # get first file path that is after the '>' character
+    out_file_path = args[-1] if args else ""
+    idx = -1
+    try:
+        idx = args.index(">")
+
+    except ValueError:
+        idx = args.index("1>")
+
+    try:
+        # dup original stdout
+        redirects["stdout"] = os.dup(sys.stdout.fileno())
+        # dup file to stdout
+        r = open(out_file_path, "w")
+        os.dup2(r.fileno(), sys.stdout.fileno())
+
+    except FileNotFoundError:
+        pass
+    # cut args to before token
+    # args = args[:idx]
+    del args[idx:]
+
+
+def redirect_stderr(args: list[str], redirects: dict[str, int]):
+    # get first file path that is after the '>' character
+    out_file_path = args[-1] if args else ""
+    idx = args.index("2>")
+
+    try:
+        # dup original stderr
+        redirects["stderr"] = os.dup(sys.stderr.fileno())
+        r = open(out_file_path, "w")
+        os.dup2(r.fileno(), sys.stderr.fileno())
+
+    except FileNotFoundError:
+        pass
+    # cut args to before token
+    # args = args[:idx]
+    del args[idx:]
+
+
+def append_stdout(args: list[str], redirects: dict[str, int]):
+    # get first file path that is after the '>' character
+    out_file_path = args[-1] if args else ""
+    idx = -1
+    try:
+        idx = args.index(">>")
+
+    except ValueError:
+        idx = args.index("1>>")
+
+    try:
+        # dup original stdout
+        redirects["stdout"] = os.dup(sys.stdout.fileno())
+        r = open(out_file_path, "a+")
+        os.dup2(r.fileno(), sys.stdout.fileno())
+
+    except FileNotFoundError:
+        pass
+    # cut args to before token
+    # args = args[:idx]
+    del args[idx:]
+
+
+def append_stderr(args: list[str], redirects: dict[str, int]):
+    # get first file path that is after the '>' character
+    out_file_path = args[-1] if args else ""
+    idx = -1
+    idx = args.index("2>>")
+
+    try:
+        # dup original stderr
+        redirects["stderr"] = os.dup(sys.stderr.fileno())
+        r = open(out_file_path, "a+")
+        os.dup2(r.fileno(), sys.stderr.fileno())
+
+    except FileNotFoundError:
+        pass
+    # cut args to before token
+    # args = args[:idx]
+    del args[idx:]
+
+
 def main():
 
     # begin repl with unprivileged user tag
@@ -48,42 +132,16 @@ def main():
 
         # Redirect streams
         if ">" in args or "1>" in args:
-            # get first file path that is after the '>' character
-            out_file_path = args[-1] if args else ""
-            idx = -1
-            try:
-                idx = args.index(">")
-
-            except ValueError:
-                idx = args.index("1>")
-
-            try:
-                # dup original stdout
-                redirects["stdout"] = os.dup(sys.stdout.fileno())
-                # dup file to stdout
-                r = open(out_file_path, "w")
-                os.dup2(r.fileno(), sys.stdout.fileno())
-
-            except FileNotFoundError:
-                pass
-            # cut args to before token
-            args = args[:idx]
+            redirect_stdout(args, redirects)
 
         if "2>" in args:
-            # get first file path that is after the '>' character
-            out_file_path = args[-1] if args else ""
-            idx = args.index("2>")
+            redirect_stderr(args, redirects)
 
-            try:
-                # dup original stderr
-                redirects["stderr"] = os.dup(sys.stderr.fileno())
-                r = open(out_file_path, "w")
-                os.dup2(r.fileno(), sys.stderr.fileno())
+        if ">>" in args or "1>>" in args:
+            append_stdout(args, redirects)
 
-            except FileNotFoundError:
-                pass
-            # cut args to before token
-            args = args[:idx]
+        if "2>>" in args:
+            append_stderr(args, redirects)
 
         if not handle_builtin_command(cmd, args) and not handle_external_command(
             cmd, args
