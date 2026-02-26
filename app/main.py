@@ -4,6 +4,7 @@ import re
 import logging
 import warnings
 import shlex
+import os
 
 
 @warnings.deprecated("s")
@@ -34,6 +35,7 @@ def main():
 
     # begin repl with unprivileged user tag
     while True:
+        redirects: dict[str, int] = {}
         sys.stdout.write("$ ")
         # read user input
         full_cmd = input()
@@ -48,15 +50,26 @@ def main():
         if ">" in args or "1>" in args:
             # get first file path that is after the '>' character
             out_file_path = args[-1] if args else ""
+            idx = -1
+            try:
+                idx = args.index(">")
+                idx = args.index("1>")
+            except ValueError:
+                pass
+
             try:
                 # TODO
-                sys.stdout = open(out_file_path, "w")
+                # dup original stdout
+                redirects["stdout"] = os.dup(sys.stdout.fileno())
+                # dup file to stdout
+                r = open(out_file_path, "w")
+                os.dup2(r.fileno(), sys.stdout.fileno())
+
             except FileNotFoundError:
                 pass
             # cut args to before token
             try:
-                args = args[: args.index(">")]
-                args = args[: args.index("1>")]
+                args = args[:idx]
             except ValueError:
                 pass
 
@@ -65,7 +78,11 @@ def main():
             out_file_path = args[-1] if args else ""
             # TODO redirect stderr
             try:
-                sys.stderr = open(out_file_path, "w")
+                # dup original stderr
+                redirects["stderr"] = os.dup(sys.stderr.fileno())
+                r = open(out_file_path, "w")
+                os.dup2(r.fileno(), sys.stderr.fileno())
+
             except FileNotFoundError:
                 pass
 
@@ -74,16 +91,11 @@ def main():
         ):
             handle_invalid_command(cmd)
 
-        # restore io
-        if sys.stdout != sys.__stdout__:
-            if sys.stdout:
-                sys.stdout.close()
-            sys.stdout = sys.__stdout__
+        if "stdout" in redirects:
+            os.dup2(redirects["stdout"], sys.stdout.fileno())
 
-        if sys.stderr != sys.__stderr__:
-            if sys.stderr:
-                sys.stderr.close()
-            sys.stderr = sys.__stderr__
+        if "stderr" in redirects:
+            os.dup2(redirects["stderr"], sys.stderr.fileno())
 
 
 def handle_builtin_command(cmd: str, args: list[str]) -> bool:
