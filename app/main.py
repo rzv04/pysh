@@ -53,12 +53,11 @@ def main():
             idx = -1
             try:
                 idx = args.index(">")
-                idx = args.index("1>")
+
             except ValueError:
-                pass
+                idx = args.index("1>")
 
             try:
-                # TODO
                 # dup original stdout
                 redirects["stdout"] = os.dup(sys.stdout.fileno())
                 # dup file to stdout
@@ -68,15 +67,13 @@ def main():
             except FileNotFoundError:
                 pass
             # cut args to before token
-            try:
-                args = args[:idx]
-            except ValueError:
-                pass
+            args = args[:idx]
 
         if "2>" in args:
             # get first file path that is after the '>' character
             out_file_path = args[-1] if args else ""
-            # TODO redirect stderr
+            idx = args.index("2>")
+
             try:
                 # dup original stderr
                 redirects["stderr"] = os.dup(sys.stderr.fileno())
@@ -85,6 +82,8 @@ def main():
 
             except FileNotFoundError:
                 pass
+            # cut args to before token
+            args = args[:idx]
 
         if not handle_builtin_command(cmd, args) and not handle_external_command(
             cmd, args
