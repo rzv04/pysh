@@ -8,8 +8,7 @@ class ShellCompleter(rlcompleter.Completer):
     def global_matches(self, text: str) -> list[str]:
         """Compute matches when text is a simple name.
 
-        Return a list of all keywords, built-in functions and names currently
-        defined in self.namespace that match.
+        Return a list of all keywords, built-in shell functions that match.
 
         """
         matches: list[str] = []
@@ -18,5 +17,8 @@ class ShellCompleter(rlcompleter.Completer):
             if word.startswith(text):
                 seen.add(word)
                 matches.append(word)
+
+        if len(matches) == 1:
+            matches[0] += " "
 
         return matches
