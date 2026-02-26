@@ -5,6 +5,9 @@ import logging
 import warnings
 import shlex
 import os
+from app.completion import ShellCompleter
+import rlcompleter
+import readline
 
 
 @warnings.deprecated("s")
@@ -116,13 +119,20 @@ def append_stderr(args: list[str], redirects: dict[str, int]):
 
 
 def main():
+    # init completer
+    # TODO WIP
+    if "libedit" in readline.__doc__:  # alternative to python3.13 'backend' function
+        readline.parse_and_bind("bind ^I rl_complete")
+    else:
+        readline.parse_and_bind("tab: complete")
+    readline.set_completer(ShellCompleter().complete)
 
     # begin repl with unprivileged user tag
     while True:
         redirects: dict[str, int] = {}
-        sys.stdout.write("$ ")
+        # sys.stdout.write("$ ")
         # read user input
-        full_cmd = input()
+        full_cmd = input("$ ")
 
         preprocessed_input = shlex.split(full_cmd)
         logging.log(level=logging.INFO, msg=preprocessed_input)
