@@ -2,6 +2,7 @@ import rlcompleter
 from typing import override
 from app.builtin_commands import BuiltinCommands
 import os
+import sys
 
 
 class ShellCompleter(rlcompleter.Completer):
@@ -52,15 +53,26 @@ class ShellCompleter(rlcompleter.Completer):
             if word.startswith(text):
                 matches.append(word)
 
-        # TODO add longest common prefix completion to multiple matches
-        lcp = self._longest_common_prefix(matches)
-        if lcp:
-            # overwrite matches to only 1 element with common prefix
-            matches = [lcp + "\a"]
+        if len(matches) == 1:
+            return [
+                matches[0] + " "
+            ]  # append a whitespace after each concrete candidate
 
-        if len(matches) == 1 and not lcp:
-            matches[0] += " "  # append a whitespace after each concrete candidate
+        # TODO add longest common prefix completion to multiple matches
+        if len(matches) > 1:
+            lcp = self._longest_common_prefix(matches)
+            if lcp and len(lcp) > len(text):
+                return [lcp]
+
+            self._ring_bell()
+            return matches
+
+        self._ring_bell()
         return matches
+
+    def _ring_bell(self):
+        sys.stdout.write("\a")
+        sys.stdout.flush()
 
     def _external_matches(self, text: str) -> list[str]:
         """Compute matches when text is a simple name.
@@ -93,14 +105,20 @@ class ShellCompleter(rlcompleter.Completer):
             pass
 
         if len(matches) == 1:
-            matches[0] += " "  # append a whitespace after each concrete candidate
+            return [
+                matches[0] + " "
+            ]  # append a whitespace after each concrete candidate
 
         # TODO add longest common prefix completion to multiple matches
-        lcp = self._longest_common_prefix(matches)
-        if lcp:
-            # overwrite matches to only 1 element with common prefix
-            matches = [lcp]
+        if len(matches) > 1:
+            lcp = self._longest_common_prefix(matches)
+            if lcp and len(lcp) > len(text):
+                return [lcp]
 
+            self._ring_bell()
+            return matches
+
+        self._ring_bell()
         return matches
 
     def _longest_common_prefix(self, matches: list[str]) -> str:
