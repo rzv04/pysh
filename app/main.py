@@ -122,6 +122,7 @@ def main():
     # TODO WIP
     if "libedit" in readline.__doc__:  # alternative to python3.13 'backend' function
         readline.parse_and_bind("bind ^I rl_complete")
+        readline.parse_and_bind("set bell-style audible")
     else:
         readline.parse_and_bind("tab: complete")
     readline.set_completer(ShellCompleter().complete)
