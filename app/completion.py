@@ -58,7 +58,7 @@ class ShellCompleter(rlcompleter.Completer):
             # overwrite matches to only 1 element with common prefix
             matches = [lcp]
 
-        if len(matches) == 1:
+        if len(matches) == 1 and not lcp:
             matches[0] += " "  # append a whitespace after each concrete candidate
         return matches
 
@@ -78,17 +78,22 @@ class ShellCompleter(rlcompleter.Completer):
                 matches.append(word)
 
         if matches:
+            if len(matches) == 1:
+                matches[0] += " "  # append a whitespace after each concrete candidate
             return matches  # all previously cached paths should already be inside
 
         try:
             for a_path in path_var:
                 for word in os.listdir(a_path):
-                    if word.startswith(text):
+                    if word.startswith(text) and word not in matches:
                         matches.append(word)
                         ShellCompleter._hit_external_cmds.add(word)
 
         except FileNotFoundError:
             pass
+
+        if len(matches) == 1:
+            matches[0] += " "  # append a whitespace after each concrete candidate
 
         # TODO add longest common prefix completion to multiple matches
         lcp = self._longest_common_prefix(matches)
@@ -96,8 +101,6 @@ class ShellCompleter(rlcompleter.Completer):
             # overwrite matches to only 1 element with common prefix
             matches = [lcp]
 
-        if len(matches) == 1:
-            matches[0] += " "  # append a whitespace after each concrete candidate
         return matches
 
     def _longest_common_prefix(self, matches: list[str]) -> str:
