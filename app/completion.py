@@ -52,6 +52,12 @@ class ShellCompleter(rlcompleter.Completer):
             if word.startswith(text):
                 matches.append(word)
 
+        # TODO add longest common prefix completion to multiple matches
+        lcp = self._longest_common_prefix(matches)
+        if lcp:
+            # overwrite matches to only 1 element with common prefix
+            matches = [lcp]
+
         if len(matches) == 1:
             matches[0] += " "  # append a whitespace after each concrete candidate
 
@@ -89,3 +95,14 @@ class ShellCompleter(rlcompleter.Completer):
             matches[0] += " "  # append a whitespace after each concrete candidate
 
         return matches
+
+    def _longest_common_prefix(self, matches: list[str]) -> str:
+        if not matches:
+            return ""
+
+        prefix = min(matches)
+        for match in matches:
+            while not match.startswith(prefix):
+                prefix = prefix[:-1:]
+
+        return prefix
