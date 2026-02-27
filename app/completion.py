@@ -56,7 +56,7 @@ class ShellCompleter(rlcompleter.Completer):
         lcp = self._longest_common_prefix(matches)
         if lcp:
             # overwrite matches to only 1 element with common prefix
-            matches = [lcp]
+            matches = [lcp + "\a"]
 
         if len(matches) == 1 and not lcp:
             matches[0] += " "  # append a whitespace after each concrete candidate
