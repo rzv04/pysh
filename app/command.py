@@ -122,7 +122,7 @@ class CommandFactory:
             return [ParsedCommand()]
 
         cmd_sep_tokens = [";", "|", "&&"]
-        redirect_tokens = [">>", "1>>", "2>", "2>>"]
+        redirect_tokens = [">", ">>", "1>>", "2>", "2>>"]
 
         cmd_list: list[ParsedCommand] = []
         new_cmd: ParsedCommand = ParsedCommand()
@@ -153,12 +153,13 @@ class CommandFactory:
 
                     match redirect_tokens.index(token):
                         case 0:
+                            # TODO put constants in enum
                             new_cmd.cmd_file_redirects["stdout"] = redirect_path
-                        case 1:
+                        case 1 | 2:
                             new_cmd.cmd_file_redirects["append_stdout"] = redirect_path
-                        case 2:
-                            new_cmd.cmd_file_redirects["stderr"] = redirect_path
                         case 3:
+                            new_cmd.cmd_file_redirects["stderr"] = redirect_path
+                        case 4:
                             new_cmd.cmd_file_redirects["append_stderr"] = redirect_path
                         case _:
                             pass
