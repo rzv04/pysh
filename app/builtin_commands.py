@@ -132,5 +132,5 @@ def shell_cd(path: str | bytes | os.PathLike[str] | os.PathLike[bytes]):
 
 
 def handle_invalid_command(cmd: str):
-    sys.stderr.write(f"{cmd}: command not found")
+    sys.stderr.write(f"{cmd}: command not found\n")
     sys.stderr.flush()
