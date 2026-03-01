@@ -234,6 +234,7 @@ class BuiltinCommand(Command):
 
     def execute(self):
         # should execute from the same process
+        self._redirect_streams()
         match self.cmd:
             case bc.BuiltinCommands.EXIT.value:
                 bc.shell_exit()
@@ -246,8 +247,9 @@ class BuiltinCommand(Command):
             case bc.BuiltinCommands.CD.value:
                 bc.shell_cd(self.args[0] if self.args else "")
             case _:
+                self._restore_streams()
                 return False
-
+        self._restore_streams()
         return True
 
 
