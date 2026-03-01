@@ -127,45 +127,48 @@ class CommandFactory:
         cmd_list: list[ParsedCommand] = []
         new_cmd: ParsedCommand = ParsedCommand()
 
-        for cursor in range(len(preprocessed_str)):
+        cursor = 0
+        while cursor < len(preprocessed_str):
             token: str = preprocessed_str[cursor]
+
             if token in cmd_sep_tokens:
-                # add sep to cmd
                 new_cmd.cmd_bind_token = token
                 cmd_list.append(new_cmd)
                 new_cmd = ParsedCommand()
+                cursor += 1
+                continue
+
+            if token in redirect_tokens:
+                redirect_path = (
+                    None
+                    if cursor + 1 >= len(preprocessed_str)
+                    else preprocessed_str[cursor + 1]
+                )
+
+                match token:
+                    case ">":
+                        new_cmd.cmd_file_redirects["stdout"] = redirect_path
+                    case ">>" | "1>>":
+                        new_cmd.cmd_file_redirects["append_stdout"] = redirect_path
+                    case "2>":
+                        new_cmd.cmd_file_redirects["stderr"] = redirect_path
+                    case "2>>":
+                        new_cmd.cmd_file_redirects["append_stderr"] = redirect_path
+                    case _:
+                        pass
+
+                cursor += 2  # IMPORTANT: skip the redirect target
+                continue
+
+            # normal word: cmd name or arg
+            if not new_cmd.cmd_name:
+                new_cmd.cmd_name = token
             else:
-                if token not in redirect_tokens and token not in cmd_sep_tokens:
-                    # add to new cmd
-                    if not new_cmd.cmd_name:
-                        new_cmd.cmd_name = token
-                    else:
-                        # add arg to list
-                        new_cmd.cmd_args += [token]
+                new_cmd.cmd_args.append(token)
 
-                elif token in redirect_tokens:
-                    # get redirect path
-                    redirect_path = (
-                        None
-                        if cursor + 1 >= len(preprocessed_str)
-                        else preprocessed_str[cursor + 1]
-                    )
-
-                    match redirect_tokens.index(token):
-                        case 0:
-                            # TODO put constants in enum
-                            new_cmd.cmd_file_redirects["stdout"] = redirect_path
-                        case 1 | 2:
-                            new_cmd.cmd_file_redirects["append_stdout"] = redirect_path
-                        case 3:
-                            new_cmd.cmd_file_redirects["stderr"] = redirect_path
-                        case 4:
-                            new_cmd.cmd_file_redirects["append_stderr"] = redirect_path
-                        case _:
-                            pass
+            cursor += 1
 
         cmd_list.append(new_cmd)
-
         return cmd_list
 
     @staticmethod
@@ -178,19 +181,47 @@ class CommandFactory:
 
     @classmethod
     def build(cls, raw_input: str) -> list[Command]:
+        def _to_command(pc: ParsedCommand) -> Command | None:
+            if not pc.cmd_name:
+                return None
+
+            redirects: dict[str, str] = {
+                k: v for k, v in pc.cmd_file_redirects.items() if isinstance(v, str)
+            }
+
+            if bc.is_builtin_command(pc.cmd_name):
+                return BuiltinCommand(pc.cmd_name, pc.cmd_args, redirects)
+            return ExternalCommand(pc.cmd_name, pc.cmd_args, redirects)
+
         results: list[Command] = []
-        cmd_list = CommandFactory._process_input(raw_input)
-        # separate builtin from separate
-        for cmd in cmd_list:
-            if bc.is_builtin_command(cmd.cmd_name):
-                # TODO handle none
-                results.append(
-                    BuiltinCommand(cmd.cmd_name, cmd.cmd_args, cmd.cmd_file_redirects)
-                )
+        parsed = CommandFactory._process_input(raw_input)
+
+        current_pipeline: list[Command] = []
+        for pc in parsed:
+            cmd = _to_command(pc)
+            if cmd is None:
+                continue
+
+            current_pipeline.append(cmd)
+
+            # If this command is piped to the next, keep accumulating
+            if pc.cmd_bind_token == "|":
+                continue
+
+            # Pipeline ends here (or it's just a single command)
+            if len(current_pipeline) == 1:
+                results.append(current_pipeline[0])
             else:
-                results.append(
-                    ExternalCommand(cmd.cmd_name, cmd.cmd_args, cmd.cmd_file_redirects)
-                )
+                results.append(PipelineCommand(current_pipeline))
+
+            current_pipeline = []
+
+        # If input ended with a pipeline (dangling '|'), finalize what we have
+        if current_pipeline:
+            if len(current_pipeline) == 1:
+                results.append(current_pipeline[0])
+            else:
+                results.append(PipelineCommand(current_pipeline))
 
         return results
 
@@ -233,12 +264,13 @@ class ExternalCommand(Command):
         if cmd_abs_path:
             # bc.shell_exec(cmd_abs_path, [self.cmd] + self.args)  # args[0] is cmd name
             # fork the process and execute the command
+
             pid = os.fork()
             if pid == 0:
                 # child process
                 # redirect streams
                 self._redirect_streams()
-                os.execvp(cmd_abs_path, self.args)
+                os.execvp(cmd_abs_path, [self.cmd] + self.args)
 
             else:
                 os.waitpid(pid, 0)
@@ -247,3 +279,87 @@ class ExternalCommand(Command):
             return False
 
         return True
+
+
+class PipelineCommand(Command):
+    def __init__(self, commands: list[Command]) -> None:
+        super().__init__(cmd="|", args=[], path_redirects={})
+        self.commands = commands
+
+    def execute(self) -> bool:
+        if not self.commands:
+            return True
+
+        n = len(self.commands)
+        if n == 1:
+            return self.commands[0].execute()
+
+        pipes: list[tuple[int, int]] = [os.pipe() for _ in range(n - 1)]
+        pids: list[int] = []
+
+        for i, stage in enumerate(self.commands):
+            pid = os.fork()
+            if pid == 0:
+                # Child: wire stdin/stdout to the pipeline
+                try:
+                    if i > 0:
+                        os.dup2(pipes[i - 1][0], sys.stdin.fileno())
+                    if i < n - 1:
+                        os.dup2(pipes[i][1], sys.stdout.fileno())
+
+                    # Close all pipe fds in child after dup2
+                    for r, w in pipes:
+                        try:
+                            os.close(r)
+                        except OSError:
+                            pass
+                        try:
+                            os.close(w)
+                        except OSError:
+                            pass
+
+                    # Execute stage without creating another fork layer
+                    if isinstance(stage, BuiltinCommand):
+                        stage._redirect_streams()
+                        ok = stage.execute()
+                        stage._restore_streams()
+                        os._exit(0 if ok else 1)
+
+                    if isinstance(stage, ExternalCommand):
+                        cmd_abs_path = bc.search_for_cmd_file(stage.cmd)
+                        if not cmd_abs_path:
+                            sys.stderr.write(f"{stage.cmd}: command not found\n")
+                            sys.stderr.flush()
+                            os._exit(127)
+
+                        stage._redirect_streams()
+                        os.execv(cmd_abs_path, [stage.cmd] + stage.args)
+
+                    # Unknown Command subtype
+                    os._exit(1)
+
+                except Exception:
+                    os._exit(1)
+
+            # Parent
+            pids.append(pid)
+
+        # Parent: close pipe fds
+        for r, w in pipes:
+            try:
+                os.close(r)
+            except OSError:
+                pass
+            try:
+                os.close(w)
+            except OSError:
+                pass
+
+        # Parent: wait for all children; pipeline success == last command success (common shell behavior)
+        last_status = 1
+        for pid in pids:
+            _, status = os.waitpid(pid, 0)
+            if pid == pids[-1]:
+                last_status = status
+
+        return os.WIFEXITED(last_status) and os.WEXITSTATUS(last_status) == 0
