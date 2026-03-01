@@ -1,11 +1,12 @@
 import sys
-import app.builtin_commands as bc
 import re
 import logging
 import warnings
 import shlex
 import os
 from app.completion import ShellCompleter
+from app.builtin_commands import handle_builtin_command
+from app.external_commands import handle_external_command
 import readline
 
 
@@ -119,7 +120,6 @@ def append_stderr(args: list[str], redirects: dict[str, int]):
 
 def main():
     # init completer
-    # TODO WIP
     if "libedit" in readline.__doc__:  # alternative to python3.13 'backend' function
         readline.parse_and_bind("bind ^I rl_complete")
         readline.parse_and_bind("set bell-style audible")
@@ -130,7 +130,6 @@ def main():
     # begin repl with unprivileged user tag
     while True:
         redirects: dict[str, int] = {}
-        # sys.stdout.write("$ ")
         # read user input
         full_cmd = input("$ ")
 
@@ -158,46 +157,12 @@ def main():
         ):
             handle_invalid_command(cmd)
 
+        # restore streams
         if "stdout" in redirects:
             os.dup2(redirects["stdout"], sys.stdout.fileno())
 
         if "stderr" in redirects:
             os.dup2(redirects["stderr"], sys.stderr.fileno())
-
-
-def handle_builtin_command(cmd: str, args: list[str]) -> bool:
-
-    match cmd:
-        case bc.BuiltinCommands.EXIT.value:
-            bc.shell_exit()
-        case bc.BuiltinCommands.ECHO.value:
-            bc.shell_echo(args)
-        case bc.BuiltinCommands.TYPE.value:
-            bc.shell_type(args)
-        case bc.BuiltinCommands.PWD.value:
-            bc.shell_pwd()
-        case bc.BuiltinCommands.CD.value:
-            bc.shell_cd(args[0] if args else "")
-
-        case _:
-            return False
-    return True
-
-
-def handle_external_command(cmd: str, args: list[str]) -> bool:
-    is_exec_cmd = "exec" in cmd
-    if is_exec_cmd:
-        # actual command should be the second word
-        cmd_abs_path = bc.search_for_cmd_file(args[0] if args else "")
-    else:
-        cmd_abs_path = bc.search_for_cmd_file(cmd)
-
-    if cmd_abs_path:
-        bc.shell_exec(cmd_abs_path, [cmd] + args)  # args[0] is cmd name
-    else:
-        # handle_invalid_command(cmd)
-        return False
-    return True
 
 
 def handle_invalid_command(cmd: str):

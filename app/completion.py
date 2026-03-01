@@ -6,8 +6,6 @@ import sys
 
 
 class ShellCompleter(rlcompleter.Completer):
-    _hit_external_cmds: set[str] = set()
-
     @override
     def complete(self, text: str, state: int):
         """Return the next possible completion for 'text'.
@@ -42,6 +40,33 @@ class ShellCompleter(rlcompleter.Completer):
 
         return matches
 
+    def _handle_prefix_matches(self, matches: list[str], text: str):
+        """Internal function to get the longest common prefix and to handle 'bell alert' cases.
+
+        Args:
+            matches (list[str]): The found matches to the text 'text'
+            text (str): The text (prefix) to be matched with external commands in $PATH.
+
+        Returns:
+            str: The original list of matches if no common prefix, else a list of only the longest common prefix between matches.
+        """
+        if len(matches) == 1:
+            return [
+                matches[0] + " "
+            ]  # append a whitespace after each concrete candidate
+
+        if len(matches) > 1:
+            lcp = self._longest_common_prefix(matches)
+            if lcp and len(lcp) > len(text):
+                return [lcp]
+
+            self._ring_bell()
+            return matches
+
+        self._ring_bell()
+
+        return matches
+
     def _builtin_matches(self, text: str) -> list[str]:
         """Compute builtin matches when text is a simple name.
 
@@ -53,22 +78,7 @@ class ShellCompleter(rlcompleter.Completer):
             if word.startswith(text):
                 matches.append(word)
 
-        if len(matches) == 1:
-            return [
-                matches[0] + " "
-            ]  # append a whitespace after each concrete candidate
-
-        # TODO add longest common prefix completion to multiple matches
-        if len(matches) > 1:
-            lcp = self._longest_common_prefix(matches)
-            if lcp and len(lcp) > len(text):
-                return [lcp]
-
-            self._ring_bell()
-            return matches
-
-        self._ring_bell()
-        return matches
+        return self._handle_prefix_matches(matches, text)
 
     def _ring_bell(self):
         sys.stdout.write("\a")
@@ -78,16 +88,10 @@ class ShellCompleter(rlcompleter.Completer):
         """Compute matches when text is a simple name.
 
         Return a list of all keywords, external shell functions that match.
-        Adds the hit resolved path to an internal set.
 
         """
         matches: list[str] = []
         path_var: list[str] = str(os.environ.get("PATH", [])).split(os.pathsep)
-
-        # search in hit set first
-        for word in ShellCompleter._hit_external_cmds:
-            if word.startswith(text):
-                matches.append(word)
 
         if matches:
             if len(matches) == 1:
@@ -99,27 +103,11 @@ class ShellCompleter(rlcompleter.Completer):
                 for word in os.listdir(a_path):
                     if word.startswith(text) and word not in matches:
                         matches.append(word)
-                        ShellCompleter._hit_external_cmds.add(word)
 
         except FileNotFoundError:
             pass
 
-        if len(matches) == 1:
-            return [
-                matches[0] + " "
-            ]  # append a whitespace after each concrete candidate
-
-        # TODO add longest common prefix completion to multiple matches
-        if len(matches) > 1:
-            lcp = self._longest_common_prefix(matches)
-            if lcp and len(lcp) > len(text):
-                return [lcp]
-
-            self._ring_bell()
-            return matches
-
-        self._ring_bell()
-        return matches
+        return self._handle_prefix_matches(matches, text)
 
     def _longest_common_prefix(self, matches: list[str]) -> str:
         if not matches:

@@ -11,6 +11,23 @@ class BuiltinCommands(Enum):
     EXEC = "exec"
     PWD = "pwd"
 
+def handle_builtin_command(cmd: str, args: list[str]) -> bool:
+
+    match cmd:
+        case BuiltinCommands.EXIT.value:
+            shell_exit()
+        case BuiltinCommands.ECHO.value:
+            shell_echo(args)
+        case BuiltinCommands.TYPE.value:
+            shell_type(args)
+        case BuiltinCommands.PWD.value:
+            shell_pwd()
+        case BuiltinCommands.CD.value:
+            shell_cd(args[0] if args else "")
+
+        case _:
+            return False
+    return True
 
 def shell_exit():
     """Exits the shell."""
@@ -103,3 +120,6 @@ def shell_cd(path: str | bytes | os.PathLike[str] | os.PathLike[bytes]):
         os.chdir(expanded_path)
     except OSError:
         print(f"cd: {expanded_path}: No such file or directory")
+
+
+
