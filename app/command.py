@@ -49,10 +49,10 @@ class Command(abc.ABC):
         # get first file path that is after the '>' character
         try:
             # dup original stdout to new fd
-            self.original_fd_redirects["stderr"] = os.dup(sys.stdout.fileno())
+            self.original_fd_redirects["stderr"] = os.dup(sys.stderr.fileno())
             # dup file to stdout
             r = open(self.path_redirects["stderr"], "w")
-            os.dup2(r.fileno(), sys.stdout.fileno())
+            os.dup2(r.fileno(), sys.stderr.fileno())
 
         except FileNotFoundError:
             pass
