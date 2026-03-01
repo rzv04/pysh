@@ -11,6 +11,11 @@ class BuiltinCommands(Enum):
     EXEC = "exec"
     PWD = "pwd"
 
+def is_builtin_command(cmd_name:str | None)-> bool:
+    if not cmd_name:
+        return False
+    return cmd_name in [bc.value for bc in BuiltinCommands]
+        
 def handle_builtin_command(cmd: str, args: list[str]) -> bool:
 
     match cmd:
