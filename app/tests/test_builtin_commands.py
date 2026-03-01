@@ -94,33 +94,9 @@ class TestBuiltinCommands(unittest.TestCase):
             subtest_cwd = os.getcwd()
             self.assertEqual(initial_cwd, subtest_cwd)
         with self.subTest("test parent cd"):
-            out = _run_shell_suppress_exit("cd ../")
+            _ = _run_shell_suppress_exit("cd ../")
             subtest_cwd = os.getcwd()
             self.assertNotEqual(initial_cwd, subtest_cwd)
-
-    @unittest.skip("deprecated")
-    def test_preprocess_args(self):
-        with self.subTest("test simple single quoted arg"):
-            args = "'hello  world'"
-            processed_args = preprocess_args(args)
-            self.assertEqual(processed_args, ["hello  world"])
-
-        with self.subTest("test no quoted arg"):
-            args = "hello world"
-            processed_args = preprocess_args(args)
-            self.assertEqual(processed_args, ["hello", "world"])
-
-        with self.subTest("test quoted arg with double quotes inside"):
-            args = "'hello''world'"
-            processed_args = preprocess_args(args)
-            self.assertEqual(processed_args, ["helloworld"])
-
-        with self.subTest("test complex quoted arg"):
-            args = "'example     hello' 'world''test' shell''script"
-            processed_args = preprocess_args(args)
-            self.assertEqual(
-                processed_args, ["example     hello worldtest shellscript"]
-            )
 
 
 if __name__ == "__main__":
