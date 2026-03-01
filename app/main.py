@@ -24,8 +24,7 @@ def main():
             cmd.execute()
 
 
-def handle_invalid_command(cmd: str):
-    print(f"{cmd}: command not found")
+
 
 
 if __name__ == "__main__":

@@ -1,5 +1,6 @@
 from enum import Enum
 from sys import exit
+import sys
 import os
 
 
@@ -11,11 +12,13 @@ class BuiltinCommands(Enum):
     EXEC = "exec"
     PWD = "pwd"
 
-def is_builtin_command(cmd_name:str | None)-> bool:
+
+def is_builtin_command(cmd_name: str | None) -> bool:
     if not cmd_name:
         return False
     return cmd_name in [bc.value for bc in BuiltinCommands]
-        
+
+
 def handle_builtin_command(cmd: str, args: list[str]) -> bool:
 
     match cmd:
@@ -33,6 +36,7 @@ def handle_builtin_command(cmd: str, args: list[str]) -> bool:
         case _:
             return False
     return True
+
 
 def shell_exit():
     """Exits the shell."""
@@ -127,4 +131,6 @@ def shell_cd(path: str | bytes | os.PathLike[str] | os.PathLike[bytes]):
         print(f"cd: {expanded_path}: No such file or directory")
 
 
-
+def handle_invalid_command(cmd: str):
+    sys.stderr.write(f"{cmd}: command not found")
+    sys.stderr.flush()

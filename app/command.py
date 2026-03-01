@@ -122,7 +122,7 @@ class CommandFactory:
             return [ParsedCommand()]
 
         cmd_sep_tokens = [";", "|", "&&"]
-        redirect_tokens = [">", ">>", "1>>", "2>", "2>>"]
+        redirect_tokens = [">", "1>", ">>", "1>>", "2>", "2>>"]
 
         cmd_list: list[ParsedCommand] = []
         new_cmd: ParsedCommand = ParsedCommand()
@@ -146,7 +146,7 @@ class CommandFactory:
                 )
 
                 match token:
-                    case ">":
+                    case ">" | "1>":
                         new_cmd.cmd_file_redirects["stdout"] = redirect_path
                     case ">>" | "1>>":
                         new_cmd.cmd_file_redirects["append_stdout"] = redirect_path
@@ -191,6 +191,9 @@ class CommandFactory:
 
             if bc.is_builtin_command(pc.cmd_name):
                 return BuiltinCommand(pc.cmd_name, pc.cmd_args, redirects)
+
+            if not bc.search_for_cmd_file(pc.cmd_name):
+                return InvalidCommand(pc.cmd_name, pc.cmd_args, redirects)
             return ExternalCommand(pc.cmd_name, pc.cmd_args, redirects)
 
         results: list[Command] = []
@@ -247,6 +250,7 @@ class BuiltinCommand(Command):
             case bc.BuiltinCommands.CD.value:
                 bc.shell_cd(self.args[0] if self.args else "")
             case _:
+                bc.handle_invalid_command(self.cmd)
                 self._restore_streams()
                 return False
         self._restore_streams()
@@ -365,3 +369,16 @@ class PipelineCommand(Command):
                 last_status = status
 
         return os.WIFEXITED(last_status) and os.WEXITSTATUS(last_status) == 0
+
+
+class InvalidCommand(Command):
+    def __init__(
+        self, cmd: str, args: list[str] = [], path_redirects: dict[str, str] = {}
+    ) -> None:
+        super().__init__(cmd, args, path_redirects)
+
+    def execute(self) -> bool:
+        self._redirect_streams()
+        bc.handle_invalid_command(self.cmd)
+        self._restore_streams()
+        return False
