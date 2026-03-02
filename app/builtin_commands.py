@@ -140,6 +140,22 @@ def shell_cd(path: str | bytes | os.PathLike[str] | os.PathLike[bytes]):
 
 
 def shell_history(args: list[str]):
+
+    if "-r" in args:
+        try:
+            i = args.index("-r")
+            f = None if i + 1 >= len(args) else args[i + 1]
+            readline.read_history_file(f) # must be a readline-created history file?
+
+        except ValueError:
+            pass
+        except FileNotFoundError:
+            pass
+        except OSError:
+            pass
+
+        return
+
     l = readline.get_current_history_length() + 1
 
     start = int(next(filter(lambda x: x.isnumeric(), args), l))  # history <n>
