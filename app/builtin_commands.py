@@ -139,10 +139,13 @@ def shell_cd(path: str | bytes | os.PathLike[str] | os.PathLike[bytes]):
         print(f"cd: {expanded_path}: No such file or directory")
 
 
-def shell_history():
+def shell_history(args: list[str]):
+    l = readline.get_current_history_length() + 1
+
+    start = int(next(filter(lambda x: x.isnumeric(), args), l))  # history <n>
+
     # print cmd index and input
-    l = readline.get_current_history_length()
-    for i in range(l + 1):  # 1-indexed
+    for i in range(l - start, l):  # 1-indexed
         hist_cmd: str | None = readline.get_history_item(
             i
         )  # can return None despite type hinting
