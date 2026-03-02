@@ -4,6 +4,7 @@ import readline
 
 
 def main():
+    readline.set_auto_history(True)
     # init completer
     if "libedit" in readline.__doc__:  # alternative to python3.13 'backend' function
         readline.parse_and_bind("bind ^I rl_complete")
@@ -16,15 +17,13 @@ def main():
     while True:
         # read user input
         full_cmd = input("$ ")
+        # readline.add_history(full_cmd)
 
         cmd_list: list[Command] = CommandFactory.build(full_cmd)
 
         # execute the commands
         for cmd in cmd_list:
             cmd.execute()
-
-
-
 
 
 if __name__ == "__main__":

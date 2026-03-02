@@ -249,6 +249,8 @@ class BuiltinCommand(Command):
                 bc.shell_pwd()
             case bc.BuiltinCommands.CD.value:
                 bc.shell_cd(self.args[0] if self.args else "")
+            case bc.BuiltinCommands.HISTORY.value:
+                bc.shell_history()
             case _:
                 bc.handle_invalid_command(self.cmd)
                 self._restore_streams()

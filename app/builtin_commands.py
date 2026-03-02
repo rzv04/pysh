@@ -2,6 +2,7 @@ from enum import Enum
 from sys import exit
 import sys
 import os
+import readline
 
 
 class BuiltinCommands(Enum):
@@ -11,6 +12,12 @@ class BuiltinCommands(Enum):
     TYPE = "type"
     EXEC = "exec"
     PWD = "pwd"
+    HISTORY = "history"
+
+
+def handle_invalid_command(cmd: str):
+    sys.stderr.write(f"{cmd}: command not found\n")
+    sys.stderr.flush()
 
 
 def is_builtin_command(cmd_name: str | None) -> bool:
@@ -32,7 +39,8 @@ def handle_builtin_command(cmd: str, args: list[str]) -> bool:
             shell_pwd()
         case BuiltinCommands.CD.value:
             shell_cd(args[0] if args else "")
-
+        case BuiltinCommands.HISTORY.value:
+            shell_history()
         case _:
             return False
     return True
@@ -131,6 +139,12 @@ def shell_cd(path: str | bytes | os.PathLike[str] | os.PathLike[bytes]):
         print(f"cd: {expanded_path}: No such file or directory")
 
 
-def handle_invalid_command(cmd: str):
-    sys.stderr.write(f"{cmd}: command not found\n")
-    sys.stderr.flush()
+def shell_history():
+    # print cmd index and input
+    l = readline.get_current_history_length()
+    for i in range(l + 1):  # 1-indexed
+        hist_cmd: str | None = readline.get_history_item(
+            i
+        )  # can return None despite type hinting
+        if hist_cmd:
+            print(f"{i} {hist_cmd}")
