@@ -145,7 +145,22 @@ def shell_history(args: list[str]):
         try:
             i = args.index("-r")
             f = None if i + 1 >= len(args) else args[i + 1]
-            readline.read_history_file(f) # must be a readline-created history file?
+            readline.read_history_file(f)  # must be a readline-created history file?
+
+        except ValueError:
+            pass
+        except FileNotFoundError:
+            pass
+        except OSError:
+            pass
+
+        return
+
+    if "-w" in args:
+        try:
+            i = args.index("-w")
+            f = None if i + 1 >= len(args) else args[i + 1]
+            readline.write_history_file(f)  # must be a readline-created history file?
 
         except ValueError:
             pass
