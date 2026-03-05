@@ -140,6 +140,7 @@ def shell_cd(path: str | bytes | os.PathLike[str] | os.PathLike[bytes]):
 
 
 def shell_history(args: list[str]):
+    l = readline.get_current_history_length() + 1
 
     if "-r" in args:
         try:
@@ -171,7 +172,22 @@ def shell_history(args: list[str]):
 
         return
 
-    l = readline.get_current_history_length() + 1
+    if "-a" in args:
+        # append all to history file
+        filename = (
+            args[args.index("-a") + 1] if len(args) > args.index("-a") + 1 else None
+        )
+        if not filename:
+            return  # no file specified; do nothing
+        try:
+            readline.append_history_file(l, filename)
+
+        except FileNotFoundError:
+            # create file before appending
+            open(filename, "a").close()
+            readline.append_history_file(l, filename)
+        
+        return
 
     start = int(next(filter(lambda x: x.isnumeric(), args), l))  # history <n>
 
