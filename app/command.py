@@ -5,7 +5,6 @@ import sys
 import shlex
 import logging
 from dataclasses import dataclass, field
-
 from app.shell_context import ShellContext
 
 

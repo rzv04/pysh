@@ -29,6 +29,9 @@ def is_builtin_command(cmd_name: str | None) -> bool:
 
 def shell_exit():
     """Exits the shell."""
+
+    # write history to file on exit
+    shell_history(["-w", ShellContext.env_HISTFILE])
     exit(0)
 
 
