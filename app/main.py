@@ -2,8 +2,8 @@ from app.completion import ShellCompleter
 from app.command import Command, CommandFactory
 import readline
 
-
-
+from app.shell_context import ShellContext
+from app.builtin_commands import shell_history
 
 
 def main():
@@ -15,6 +15,12 @@ def main():
     else:
         readline.parse_and_bind("tab: complete")
     readline.set_completer(ShellCompleter().complete)
+
+    # init context
+    ShellContext.init()
+
+    # read history on startup if available
+    shell_history(["-r", ShellContext.env_HISTFILE])
 
     # begin repl with unprivileged user tag
     while True:
