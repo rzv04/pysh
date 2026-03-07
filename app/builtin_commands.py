@@ -3,6 +3,7 @@ from sys import exit
 import sys
 import os
 import readline
+from app.shell_context import ShellContext
 
 
 class BuiltinCommands(Enum):
@@ -24,26 +25,6 @@ def is_builtin_command(cmd_name: str | None) -> bool:
     if not cmd_name:
         return False
     return cmd_name in [bc.value for bc in BuiltinCommands]
-
-
-def handle_builtin_command(cmd: str, args: list[str]) -> bool:
-
-    match cmd:
-        case BuiltinCommands.EXIT.value:
-            shell_exit()
-        case BuiltinCommands.ECHO.value:
-            shell_echo(args)
-        case BuiltinCommands.TYPE.value:
-            shell_type(args)
-        case BuiltinCommands.PWD.value:
-            shell_pwd()
-        case BuiltinCommands.CD.value:
-            shell_cd(args[0] if args else "")
-        case BuiltinCommands.HISTORY.value:
-            shell_history()
-        case _:
-            return False
-    return True
 
 
 def shell_exit():
@@ -139,7 +120,7 @@ def shell_cd(path: str | bytes | os.PathLike[str] | os.PathLike[bytes]):
         print(f"cd: {expanded_path}: No such file or directory")
 
 
-def shell_history(args: list[str]):
+def shell_history(args: list[str]) -> int:
     l = readline.get_current_history_length() + 1
 
     if "-r" in args:
@@ -155,7 +136,7 @@ def shell_history(args: list[str]):
         except OSError:
             pass
 
-        return
+        return 0
 
     if "-w" in args:
         try:
@@ -170,24 +151,30 @@ def shell_history(args: list[str]):
         except OSError:
             pass
 
-        return
+        return l
 
     if "-a" in args:
-        # append all to history file
+        # append current history length - last appended items  to history file
         filename = (
             args[args.index("-a") + 1] if len(args) > args.index("-a") + 1 else None
         )
         if not filename:
-            return  # no file specified; do nothing
+            return 0  # no file specified; do nothing
         try:
-            readline.append_history_file(l, filename)
+            if l - ShellContext.hist_appended_items - 1 > 0:
+                readline.append_history_file(
+                    l - ShellContext.hist_appended_items, filename
+                )
 
         except FileNotFoundError:
             # create file before appending
             open(filename, "a").close()
-            readline.append_history_file(l, filename)
-        
-        return
+            if l - ShellContext.hist_appended_items - 1 > 0:
+                readline.append_history_file(
+                    l - ShellContext.hist_appended_items, filename
+                )
+
+        return l - ShellContext.hist_appended_items
 
     start = int(next(filter(lambda x: x.isnumeric(), args), l))  # history <n>
 
@@ -198,3 +185,5 @@ def shell_history(args: list[str]):
         )  # can return None despite type hinting
         if hist_cmd:
             print(f"{i} {hist_cmd}")
+
+    return 0

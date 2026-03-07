@@ -1,3 +1,4 @@
 _HiStOrY_V2_
-history\040-a\040hist.txt
+history\040-w\040hist.txt
+history
 history\040-a\040hist.txt

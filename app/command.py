@@ -6,6 +6,8 @@ import shlex
 import logging
 from dataclasses import dataclass, field
 
+from app.shell_context import ShellContext
+
 
 class Command(abc.ABC):
     def __init__(
@@ -250,7 +252,7 @@ class BuiltinCommand(Command):
             case bc.BuiltinCommands.CD.value:
                 bc.shell_cd(self.args[0] if self.args else "")
             case bc.BuiltinCommands.HISTORY.value:
-                bc.shell_history(self.args)
+                ShellContext.hist_appended_items += bc.shell_history(self.args)
             case _:
                 bc.handle_invalid_command(self.cmd)
                 self._restore_streams()

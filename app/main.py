@@ -3,6 +3,9 @@ from app.command import Command, CommandFactory
 import readline
 
 
+
+
+
 def main():
     readline.set_auto_history(True)
     # init completer
