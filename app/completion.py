@@ -63,9 +63,7 @@ class ShellCompleter(rlcompleter.Completer):
                 prev_token = partial_tokens[text_pos - 1]
                 if prev_token not in ["|", "&&", "||"]:
                     # text is an argument to a command; check for filename matches first
-                    matches = self._nested_path_filename_matches(
-                        text
-                    ) or self._local_filename_matches(text)
+                    matches = self._nested_path_filename_matches(text)
                 else:
                     matches = self._builtin_matches(text) or self._external_matches(
                         text
@@ -166,13 +164,13 @@ class ShellCompleter(rlcompleter.Completer):
 
         return prefix
 
-    def _local_filename_matches(self, text: str) -> list[str]:
-        """Compute matches when text is a filename inside the current directory.
+    # def _local_filename_matches(self, text: str) -> list[str]:
+    #     """Compute matches when text is a filename inside the current directory.
 
-        Return a list of all keywords, filenames in the current directory that match.
+    #     Return a list of all keywords, filenames in the current directory that match.
 
-        """
-        return self._dirs_matches(text, ["."])
+    #     """
+    #     matches = self._dirs_matches(text, ["."])
 
     def _nested_path_filename_matches(self, text: str) -> list[str]:
         """Compute matches when text is a (partial) filename with nested absolute/relative path.
@@ -199,6 +197,14 @@ class ShellCompleter(rlcompleter.Completer):
 
         # append the path component to the found filename matches
         for match in filename_matches:
-            matches.append(str(path_component / match))
+            matches.append(str(path_component) + "/" + match)
+
+        # if the only candidate is a directory, append a path delimiter to it
+        # instead of whitespace
+
+        if len(matches) == 1 and os.path.isdir(matches[0].strip()):
+            # remove any whitespace appended by _handle_prefix_matches
+            matches[0] = matches[0].strip()
+            matches[0] += "/"
 
         return matches
