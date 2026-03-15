@@ -3,7 +3,7 @@ from app.command import Command, CommandFactory
 import readline
 
 from app.shell_context import ShellContext
-from app.builtin_commands import shell_history, shell_exit
+from app.builtin_commands import shell_history
 
 
 def main():
