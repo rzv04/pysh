@@ -14,6 +14,12 @@ def main():
         readline.parse_and_bind("set bell-style audible")
     else:
         readline.parse_and_bind("tab: complete")
+
+    # remove path delimiters
+    delims = readline.get_completer_delims()
+    delims = delims.replace("-", "").replace("/", "")
+    readline.set_completer_delims(delims)
+
     readline.set_completer(ShellCompleter().complete)
 
     # init context

@@ -3,6 +3,9 @@ from typing import override
 from app.builtin_commands import BuiltinCommands
 import os
 import sys
+import pathlib
+from app.shell_context import ShellContext
+import shlex
 
 
 class ShellCompleter(rlcompleter.Completer):
@@ -29,17 +32,44 @@ class ShellCompleter(rlcompleter.Completer):
 
     @override
     def global_matches(self, text: str) -> list[str]:
-        """Compute matches when text is a simple name.
+        """Compute matches when text is a simple (file)name, a path, or a nested path with a partial filename.
 
-        Return a list of all keywords, built-in shell functions that match.
+        Args:
+            text(str): The partial text to be matched with external commands in $PATH, or with filenames in the current directory,
+            or with filenames in a nested path.
 
+            A partial path is a path with a partial filename, eg. "src/ma" is a partial path with "src" as the
+            path component and "ma" as the partial filename component.
+            This can be completed only when it is an argument to a command, eg. "ls src/ma" should be completed to "ls src/main.py" if "src/main.py" exists,
+            but "src/ma" alone should not be completed since it is not an argument to a command.
+
+        Returns:
+            list[str]: Return a list of all keywords, built-in shell functions that match.
         """
-        matches = self._builtin_matches(text)
-        if not matches:
-            matches = self._external_matches(text)
-
-        if not matches:
-            matches = self._filename_matches(text)
+        # matches = (
+        #     self._builtin_matches(text)
+        #     or self._external_matches(text)
+        #     or self._local_filename_matches(text)
+        #     or self._nested_path_filename_matches(text)
+        # )
+        matches: list[str] = []
+        buf = ShellContext.get_input_buffer()
+        # Run partial shlex to determine if the text is an argument to a command or not
+        partial_tokens = shlex.split(buf)
+        if partial_tokens:
+            # find text position in the input buffer split
+            text_pos = partial_tokens.index(text) if text in partial_tokens else -1
+            if text_pos > 0:  # check if previous token is not a special symbol
+                prev_token = partial_tokens[text_pos - 1]
+                if prev_token not in ["|", "&&", "||"]:
+                    # text is an argument to a command; check for filename matches first
+                    matches = self._nested_path_filename_matches(
+                        text
+                    ) or self._local_filename_matches(text)
+                else:
+                    matches = self._builtin_matches(text) or self._external_matches(
+                        text
+                    )
 
         return matches
 
@@ -87,14 +117,17 @@ class ShellCompleter(rlcompleter.Completer):
         sys.stdout.write("\a")
         sys.stdout.flush()
 
-    def _external_matches(self, text: str) -> list[str]:
-        """Compute matches when text is a simple name.
+    def _dirs_matches(self, text: str, paths: list[str]) -> list[str]:
+        """Compute matches when text is a simple name, searching inside all given paths.
 
-        Return a list of all keywords, external shell functions that match.
+        Args:
+            text (str): The partial text (not a path part) to be matched with.
+            paths (list[str]): A list of directories to search for matches in.
 
+        Returns:
+            list[str]: Return a list of all keywords found in all given directories that match.
         """
         matches: list[str] = []
-        path_var: list[str] = str(os.environ.get("PATH", [])).split(os.pathsep)
 
         if matches:
             if len(matches) == 1:
@@ -102,7 +135,7 @@ class ShellCompleter(rlcompleter.Completer):
             return matches  # all previously cached paths should already be inside
 
         try:
-            for a_path in path_var:
+            for a_path in paths:
                 for word in os.listdir(a_path):
                     if word.startswith(text) and word not in matches:
                         matches.append(word)
@@ -111,6 +144,16 @@ class ShellCompleter(rlcompleter.Completer):
             pass
 
         return self._handle_prefix_matches(matches, text)
+
+    def _external_matches(self, text: str) -> list[str]:
+        """Compute matches when text is a simple name.
+
+        Return a list of all keywords, external shell functions that match.
+
+        """
+        path_var: list[str] = str(os.environ.get("PATH", [])).split(os.pathsep)
+
+        return self._dirs_matches(text, path_var)
 
     def _longest_common_prefix(self, matches: list[str]) -> str:
         if not matches:
@@ -123,11 +166,21 @@ class ShellCompleter(rlcompleter.Completer):
 
         return prefix
 
-    def _filename_matches(self, text: str) -> list[str]:
-        """Compute matches when text is a filename.
+    def _local_filename_matches(self, text: str) -> list[str]:
+        """Compute matches when text is a filename inside the current directory.
 
         Return a list of all keywords, filenames in the current directory that match.
 
+        """
+        return self._dirs_matches(text, ["."])
+
+    def _nested_path_filename_matches(self, text: str) -> list[str]:
+        """Compute matches when text is a (partial) filename with nested absolute/relative path.
+        eg. for text = "src/ma", if "src/main.py" exists, it should be a match.
+
+        Return a list of all keywords, filenames in the given current directory that match.
+
+        For a completion to be made, the given directory must exist, be it absolute or relative.
         """
         matches: list[str] = []
 
@@ -136,11 +189,16 @@ class ShellCompleter(rlcompleter.Completer):
                 matches[0] += " "  # append a whitespace after each concrete candidate
             return matches  # all previously cached paths should already be inside
 
-        try:
-            for word in os.listdir("."):
-                if word.startswith(text) and word not in matches:
-                    matches.append(word)
-        except FileNotFoundError:
-            pass
+        # extract path component and filename component from text
+        p = pathlib.Path(text)
+        path_component = p.parent
+        filename_component = p.name
 
-        return self._handle_prefix_matches(matches, text)
+        # find filename matches inside the given path component
+        filename_matches = self._dirs_matches(filename_component, [str(path_component)])
+
+        # append the path component to the found filename matches
+        for match in filename_matches:
+            matches.append(str(path_component / match))
+
+        return matches
