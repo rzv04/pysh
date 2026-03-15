@@ -38,6 +38,9 @@ class ShellCompleter(rlcompleter.Completer):
         if not matches:
             matches = self._external_matches(text)
 
+        if not matches:
+            matches = self._filename_matches(text)
+
         return matches
 
     def _handle_prefix_matches(self, matches: list[str], text: str):
@@ -119,3 +122,25 @@ class ShellCompleter(rlcompleter.Completer):
                 prefix = prefix[:-1:]
 
         return prefix
+
+    def _filename_matches(self, text: str) -> list[str]:
+        """Compute matches when text is a filename.
+
+        Return a list of all keywords, filenames in the current directory that match.
+
+        """
+        matches: list[str] = []
+
+        if matches:
+            if len(matches) == 1:
+                matches[0] += " "  # append a whitespace after each concrete candidate
+            return matches  # all previously cached paths should already be inside
+
+        try:
+            for word in os.listdir("."):
+                if word.startswith(text) and word not in matches:
+                    matches.append(word)
+        except FileNotFoundError:
+            pass
+
+        return self._handle_prefix_matches(matches, text)
