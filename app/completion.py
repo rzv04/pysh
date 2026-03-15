@@ -197,7 +197,7 @@ class ShellCompleter(rlcompleter.Completer):
 
         # append the path component to the found filename matches
         for match in filename_matches:
-            matches.append(str(path_component) + "/" + match)
+            matches.append(str(path_component / match))
 
         # if the only candidate is a directory, append a path delimiter to it
         # instead of whitespace
