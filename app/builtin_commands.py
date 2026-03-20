@@ -2,7 +2,9 @@ from enum import Enum
 from sys import exit
 import sys
 import os
-import readline
+
+# import readline
+from prompt_toolkit.history import FileHistory
 from app.shell_context import ShellContext
 
 
@@ -124,13 +126,26 @@ def shell_cd(path: str | bytes | os.PathLike[str] | os.PathLike[bytes]):
 
 
 def shell_history(args: list[str]) -> int:
-    l = readline.get_current_history_length() + 1
+    """A builtin command similar to Bash's 'history' command.
+    
+    Currently, the history shows up in reversed order compared to Bash's version (most recent items first)
+
+    Args:
+        args (list[str]): Arguments to be received by the command.
+
+    Returns:
+        int: The number of added history items to the history file (if any).
+    """
+    l = len(list(ShellContext.history.load_history_strings()))
 
     if "-r" in args:
         try:
             i = args.index("-r")
             f = None if i + 1 >= len(args) else args[i + 1]
-            readline.read_history_file(f)  # must be a readline-created history file?
+            if f:
+                ShellContext.history = FileHistory(f)
+
+            return 0
 
         except ValueError:
             pass
@@ -145,7 +160,13 @@ def shell_history(args: list[str]) -> int:
         try:
             i = args.index("-w")
             f = None if i + 1 >= len(args) else args[i + 1]
-            readline.write_history_file(f)  # must be a readline-created history file?
+            if f:
+                save_history = FileHistory(f)
+                # TODO
+                for line in ShellContext.history.load_history_strings():
+                    save_history.store_string(line)
+                return l
+            return 0
 
         except ValueError:
             pass
@@ -157,36 +178,38 @@ def shell_history(args: list[str]) -> int:
         return l
 
     if "-a" in args:
-        # append current history length - last appended items  to history file
+        # append current history length - last appended items to history file
         filename = (
             args[args.index("-a") + 1] if len(args) > args.index("-a") + 1 else None
         )
         if not filename:
             return 0  # no file specified; do nothing
-        try:
-            if l - ShellContext.hist_appended_items - 1 > 0:
-                readline.append_history_file(
-                    l - ShellContext.hist_appended_items, filename
-                )
-
-        except FileNotFoundError:
-            # create file before appending
-            open(filename, "a").close()
-            if l - ShellContext.hist_appended_items - 1 > 0:
-                readline.append_history_file(
-                    l - ShellContext.hist_appended_items, filename
-                )
+        # try:
+        if l - ShellContext.hist_appended_items - 1 > 0:
+            # readline.append_history_file(
+            #     l - ShellContext.hist_appended_items, filename
+            # )
+            save_history = FileHistory(filename)
+            # TODO
+            s = ShellContext.history.get_strings()
+            for line in s[l - ShellContext.hist_appended_items :]:
+                save_history.store_string(line)
 
         return l - ShellContext.hist_appended_items
 
-    start = int(next(filter(lambda x: x.isnumeric(), args), l))  # history <n>
+    if "-c" in args:
+        # readline.clear_history()
+        open(ShellContext.env_HISTFILE, "w").close()
+        return 0
 
+    n = int(next(filter(lambda x: x.isnumeric(), args), l))  # history <n>
+
+    items = list(ShellContext.history.load_history_strings())
     # print cmd index and input
-    for i in range(l - start, l):  # 1-indexed
-        hist_cmd: str | None = readline.get_history_item(
-            i
-        )  # can return None despite type hinting
-        if hist_cmd:
-            print(f"{i} {hist_cmd}")
+    for i in range(n):  # 1-indexed
+        hist_cmd = items[i]
+        print(f"{i} {hist_cmd}")
 
-    return 0
+    # return number of items
+
+    return min(l, n)
