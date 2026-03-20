@@ -23,13 +23,10 @@ def main():
         auto_suggest=AutoSuggestFromHistory(),
     )
 
-    # read history on startup if available
-    shell_history(["-r", ShellContext.env_HISTFILE])
-
     # begin repl with unprivileged user tag
     while True:
         # read user input
-        full_cmd = session.prompt(
+        full_cmd: str = session.prompt(
             message="$ ",
             lexer=PygmentsLexer(BashLexer),
             style=style,
