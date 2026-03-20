@@ -5,6 +5,7 @@ from prompt_toolkit.lexers import PygmentsLexer
 from prompt_toolkit import PromptSession
 from prompt_toolkit.styles.pygments import style_from_pygments_cls
 from pygments.styles import get_style_by_name
+from prompt_toolkit.auto_suggest import AutoSuggestFromHistory
 
 from app.shell_context import ShellContext
 from app.builtin_commands import shell_history
@@ -15,7 +16,12 @@ def main():
     ShellContext.init()
 
     style = style_from_pygments_cls(get_style_by_name("monokai"))
-    session = PromptSession(history=ShellContext.history)
+    session = PromptSession(
+        history=ShellContext.history,
+        completer=ShellCompleter(),
+        complete_while_typing=False,
+        auto_suggest=AutoSuggestFromHistory(),
+    )
 
     # read history on startup if available
     shell_history(["-r", ShellContext.env_HISTFILE])
