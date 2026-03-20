@@ -30,10 +30,11 @@ def is_builtin_command(cmd_name: str | None) -> bool:
 
 
 def shell_exit():
-    """Exits the shell."""
+    """Exits the shell.
 
-    # write history to file on exit
-    shell_history(["-w", ShellContext.env_HISTFILE])
+    Since history is saved line by line on disk every time,
+    it should already be updated without explicitly appending to the history file.
+    """
     exit(0)
 
 
@@ -127,7 +128,7 @@ def shell_cd(path: str | bytes | os.PathLike[str] | os.PathLike[bytes]):
 
 def shell_history(args: list[str]) -> int:
     """A builtin command similar to Bash's 'history' command.
-    
+
     Currently, the history shows up in reversed order compared to Bash's version (most recent items first)
 
     Args:
