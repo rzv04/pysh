@@ -1,9 +1,16 @@
 [project]
-name = "codecrafters-shell"
+name = "pysh"
 version = "0.1.0"
-requires-python = ">=3.14"
+requires-python = ">=3.10"
 dependencies = [
-    "prompt-toolkit>=3.0.52",
-    "pygments>=2.19.2",
+    "prompt-toolkit",
+    "pygments",
 ]
+readme = "README.md"
 
+[build-system]
+requires = ["uv_build>=0.10.9,<0.11.0"]
+build-backend = "uv_build"
+
+[project.scripts]
+pysh = "pysh.main:main"

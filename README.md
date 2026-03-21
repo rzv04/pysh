@@ -1,34 +1,50 @@
-[![progress-banner](https://backend.codecrafters.io/progress/shell/9954846a-536d-4bff-8cab-edf46289ce34)](https://app.codecrafters.io/users/codecrafters-bot?r=2qF)
+# pysh
 
-This is a starting point for Python solutions to the
-["Build Your Own Shell" Challenge](https://app.codecrafters.io/courses/shell/overview).
+![build-passing](https://img.shields.io/badge/build-passing-brightgreen)
+![tests-passing](https://img.shields.io/badge/tests-passing-brightgreen)
+[![required-python-version](https://img.shields.io/python/required-version-toml?tomlFilePath=https%3A%2F%2Fraw.githubusercontent.com%2Frzv04%2Fpysh%2Fmain%2Fpyproject.toml)](https://github.com/rzv04/pysh)
 
-In this challenge, you'll build your own POSIX compliant shell that's capable of
-interpreting shell commands, running external programs and builtin commands like
-cd, pwd, echo and more. Along the way, you'll learn about shell command parsing,
-REPLs, builtin commands, and more.
+> A Python shell featuring command auto-completion, auto-suggestion, and syntax highlighting
 
-**Note**: If you're viewing this repo on GitHub, head over to
-[codecrafters.io](https://codecrafters.io) to try the challenge.
+---
 
-# Passing the first stage
+## Usage
 
-The entry point for your `shell` implementation is in `app/main.py`. Study and
-uncomment the relevant code, and push your changes to pass the first stage:
+---
 
-```sh
-git commit -am "pass 1st stage" # any msg
-git push origin master
+![example-usage-1](example-images/demo.gif)
+
+Usage is pretty similar to your regular shell, such as Bash, or zsh, like:
+
+- _exit_ (_or CTRL+D_) to exit the shell! (_duh_)
+- Tab for autocomplete while typing a command
+- Up-Down arrow keys for navigating through the command history
+- Right arrow for using the given auto-suggestion (_in faded font_)
+- CTRL-C to cancel the typed command and to begin a new one
+
+## Install
+
+TODO install instructions
+
+## Running
+
+```bash
+$ pysh
+
+# Inside pysh:
+$ <command> <options> <arguments> <ENTER>
+
+# Command result appears here
+...
+
+$ exit
+# OR
+$ <CTRL+D>
 ```
 
-Time to move on to the next stage!
+## Roadmap
 
-# Stage 2 & beyond
+- [ ] Integrate Bash scripting
+- [x] Prettier packaging
 
-Note: This section is for stages 2 and beyond.
-
-1. Ensure you have `uv` installed locally
-1. Run `./your_program.sh` to run your program, which is implemented in
-   `app/main.py`.
-1. Commit your changes and run `git push origin master` to submit your solution
-   to CodeCrafters. Test output will be streamed to your terminal.
+> Courtesy of [codecrafters](https://app.codecrafters.io/courses/shell/overview) and [python-prompt-toolkit](https://github.com/prompt-toolkit/python-prompt-toolkit) for massively helping to build this project!
