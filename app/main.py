@@ -6,9 +6,7 @@ from prompt_toolkit import PromptSession
 from prompt_toolkit.styles.pygments import style_from_pygments_cls
 from pygments.styles import get_style_by_name
 from prompt_toolkit.auto_suggest import AutoSuggestFromHistory
-
 from app.shell_context import ShellContext
-from app.builtin_commands import shell_history
 
 
 def main():

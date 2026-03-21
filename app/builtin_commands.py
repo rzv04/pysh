@@ -162,11 +162,21 @@ def shell_history(args: list[str]) -> int:
             i = args.index("-w")
             f = None if i + 1 >= len(args) else args[i + 1]
             if f:
-                save_history = FileHistory(f)
-                # TODO
-                for line in ShellContext.history.load_history_strings():
-                    save_history.store_string(line)
+                # Overwrite the target file with the current history, matching
+                # readline.write_history_file semantics.
+                try:
+                    with open(f, "w", encoding="utf-8") as hist_file:
+                        for line in ShellContext.history.load_history_strings():
+                            # Ensure each history entry is written on its own line.
+                            if line.endswith("\n"):
+                                hist_file.write(line)
+                            else:
+                                hist_file.write(line + "\n")
+                except OSError:
+                    # On write error, indicate that nothing was successfully recorded.
+                    return 0
                 return l
+            
             return 0
 
         except ValueError:
@@ -199,7 +209,6 @@ def shell_history(args: list[str]) -> int:
         return l - ShellContext.hist_appended_items
 
     if "-c" in args:
-        # readline.clear_history()
         open(ShellContext.env_HISTFILE, "w").close()
         return 0
 
@@ -207,10 +216,10 @@ def shell_history(args: list[str]) -> int:
 
     items = list(ShellContext.history.load_history_strings())
     # print cmd index and input
-    for i in range(n):  # 1-indexed
+    num_to_print = min(l, n)
+    for i in range(num_to_print):  # 1-indexed
         hist_cmd = items[i]
         print(f"{i} {hist_cmd}")
 
-    # return number of items
-
-    return min(l, n)
+    # no items are appended to the history file
+    return 0

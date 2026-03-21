@@ -11,9 +11,6 @@ def _run_shell_suppress_exit() -> str:
     collects the stdout contents then resets stdin and stdout.
     The chain should not contain the 'exit' command, as it is inserted by this function.
 
-    Args:
-        raw_str (str): The command or chain of commands to be tested
-
     Returns:
         str: The collected output from stdout
     """
@@ -25,6 +22,7 @@ def _run_shell_suppress_exit() -> str:
 
     sys.stdout.seek(0)
     out = sys.stdout.read()
+    _clear_io()
     return out
 
 
