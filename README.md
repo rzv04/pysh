@@ -24,7 +24,38 @@ Usage is pretty similar to your regular shell, such as Bash, or zsh, like:
 
 ## Install
 
-TODO install instructions
+### Installing from repository
+
+With [Python 3.10+](https://www.python.org/downloads/release/python-3100/) and [pipx](https://pipx.pypa.io/stable/) installed,
+run the following command:
+
+```bash
+$ pipx install "pysh @ git+https://github.com/rzv04/pysh.git@v0.1.0"
+```
+
+You can now simply run it with:
+
+```bash
+$ pysh
+```
+
+### Installing from source/distribution packaging
+
+Other common distribution formats (.tar.gz, wheels) are available at the [Releases](https://github.com/rzv04/pysh/releases) section.
+To manually build them from the source, clone the repository and run the following:
+
+```bash
+~$ git clone https://github.com/rzv04/pysh.git
+
+~$ cd
+
+~/pysh/$ uv build
+
+~/pysh/$ cd dist/; ls
+
+```
+
+You will need [uv](https://docs.astral.sh/uv/#installation) to run _uv build_.
 
 ## Running
 
