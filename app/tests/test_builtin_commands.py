@@ -1,27 +1,20 @@
 import unittest
-from app.main import main, preprocess_args
+from app.main import main
 import sys
 from io import StringIO
 import os
+from unittest.mock import patch
 
 
-def _write_stdin_reset_cursor(raw_str: str):
-    sys.stdin.write(raw_str)
-    sys.stdin.seek(0)
-
-
-def _run_shell_suppress_exit(raw_str: str) -> str:
+def _run_shell_suppress_exit() -> str:
     """Runs the shell program by writing the raw str in its format inside (mocked) stdin,
     collects the stdout contents then resets stdin and stdout.
     The chain should not contain the 'exit' command, as it is inserted by this function.
 
-    Args:
-        raw_str (str): The command or chain of commands to be tested
-
     Returns:
         str: The collected output from stdout
     """
-    _write_stdin_reset_cursor(raw_str + "\nexit\n")
+    # _write_stdin_reset_cursor(raw_str, "exit")
     try:
         main()
     except SystemExit:
@@ -42,6 +35,8 @@ def _clear_io():
 
 
 class TestBuiltinCommands(unittest.TestCase):
+    """Test case for the builtin commands."""
+
     @classmethod
     def setUpClass(cls):
         # redirect stdin and stdout
@@ -55,46 +50,60 @@ class TestBuiltinCommands(unittest.TestCase):
 
         return super().tearDownClass()
 
+    def prepare_input(self, *args: str):
+        """Prepares the input, finally writing 'exit' at the end of the input chain."""
+
+        self.session.prompt.side_effect = [*args, "exit"]
+
     def setUp(self):
         _clear_io()
+        # prepare prompt input patcher
+        self.patcher = patch("app.main.PromptSession")
+        self.MockPromptSession = self.patcher.start()
+        self.addCleanup(self.patcher.stop)
+        self.session = self.MockPromptSession.return_value
 
     def test_shell_exit(self):
-        sys.stdin.write("exit")
-        sys.stdin.seek(0)  # Reposition cursor at beginning of command
+        self.prepare_input()
         self.assertRaises(SystemExit, main)
 
     def test_shell_echo(self):
+        # patch the input
         with self.subTest("test whitespace echo"):
-            out = _run_shell_suppress_exit("echo ")
-            # self.assertIs(bool(out), False, f"out={out}")
-            self.assertEqual("$ \n$ ", out)
+            self.prepare_input("echo hello world")
+            out = _run_shell_suppress_exit()
+            self.assertIn("hello world", out)
 
     def test_shell_type(self):
 
         with self.subTest("test type of builtin command"):
+            self.prepare_input("type cd")
             # collect stdout contents
-            collected_output = _run_shell_suppress_exit("type cd")
-            line = collected_output
+            out = _run_shell_suppress_exit()
             # first test: type cd returns builtin
-            self.assertIn("shell builtin", line)
+            self.assertIn("shell builtin", out)
 
     def test_shell_pwd(self):
         correct_cwd = os.getcwd()
-        out_result = _run_shell_suppress_exit("pwd")
-        self.assertIn(correct_cwd, out_result)
+        self.prepare_input("pwd")
+        out = _run_shell_suppress_exit()
+        self.assertIn(correct_cwd, out)
 
     def test_shell_cd(self):
         initial_cwd = os.getcwd()
         with self.subTest("test empty cd"):
             # passes if exits with no other exception
-            _ = _run_shell_suppress_exit("cd ")
+            self.prepare_input("cd ")
+            _ = _run_shell_suppress_exit()
         with self.subTest("test non-existing directory cd"):
-            out = _run_shell_suppress_exit("cd /bla-bla-bla/")
+            self.prepare_input("cd /bla-bla-bla/")
+            out = _run_shell_suppress_exit()
             self.assertIn("No such file or directory", out)
             subtest_cwd = os.getcwd()
             self.assertEqual(initial_cwd, subtest_cwd)
         with self.subTest("test parent cd"):
-            _ = _run_shell_suppress_exit("cd ../")
+            self.prepare_input("cd ../")
+            _ = _run_shell_suppress_exit()
             subtest_cwd = os.getcwd()
             self.assertNotEqual(initial_cwd, subtest_cwd)
 

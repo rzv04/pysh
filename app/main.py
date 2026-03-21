@@ -1,38 +1,41 @@
 from app.completion import ShellCompleter
 from app.command import Command, CommandFactory
-import readline
-
+from pygments.lexers.shell import BashLexer
+from prompt_toolkit.lexers import PygmentsLexer
+from prompt_toolkit import PromptSession
+from prompt_toolkit.styles.pygments import style_from_pygments_cls
+from pygments.styles import get_style_by_name
+from prompt_toolkit.auto_suggest import AutoSuggestFromHistory
 from app.shell_context import ShellContext
-from app.builtin_commands import shell_history
+from app.builtin_commands import shell_exit
 
 
 def main():
-    readline.set_auto_history(True)
-    # init completer
-    if "libedit" in readline.__doc__:  # alternative to python3.13 'backend' function
-        readline.parse_and_bind("bind ^I rl_complete")
-        readline.parse_and_bind("set bell-style audible")
-    else:
-        readline.parse_and_bind("tab: complete")
-
-    # remove path delimiters
-    delims = readline.get_completer_delims()
-    delims = delims.replace("-", "").replace("/", "")
-    readline.set_completer_delims(delims)
-
-    readline.set_completer(ShellCompleter().complete)
-
-    # init context
+    # init context with history
     ShellContext.init()
 
-    # read history on startup if available
-    shell_history(["-r", ShellContext.env_HISTFILE])
+    style = style_from_pygments_cls(get_style_by_name("monokai"))
+    session = PromptSession(
+        history=ShellContext.history,
+        completer=ShellCompleter(),
+        complete_while_typing=False,
+        auto_suggest=AutoSuggestFromHistory(),
+    )
 
     # begin repl with unprivileged user tag
     while True:
-        # read user input
-        full_cmd = input("$ ")
-        # readline.add_history(full_cmd)
+        try:
+            # read user input
+            full_cmd: str = session.prompt(
+                message="$ ",
+                lexer=PygmentsLexer(BashLexer),
+                style=style,
+                include_default_pygments_style=False,
+            )
+        except KeyboardInterrupt:  # CTRL+C
+            continue
+        except EOFError:  # CTRL+D
+            shell_exit(0)
 
         cmd_list: list[Command] = CommandFactory.build(full_cmd)
 

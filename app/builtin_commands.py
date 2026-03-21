@@ -2,7 +2,9 @@ from enum import Enum
 from sys import exit
 import sys
 import os
-import readline
+
+# import readline
+from prompt_toolkit.history import FileHistory
 from app.shell_context import ShellContext
 
 
@@ -27,12 +29,13 @@ def is_builtin_command(cmd_name: str | None) -> bool:
     return cmd_name in [bc.value for bc in BuiltinCommands]
 
 
-def shell_exit():
-    """Exits the shell."""
+def shell_exit(status: int):
+    """Exits the shell.
 
-    # write history to file on exit
-    shell_history(["-w", ShellContext.env_HISTFILE])
-    exit(0)
+    Since history is saved line by line on disk every time,
+    it should already be updated without explicitly appending to the history file.
+    """
+    exit(status)
 
 
 def shell_echo(args: list[str]):
@@ -124,13 +127,26 @@ def shell_cd(path: str | bytes | os.PathLike[str] | os.PathLike[bytes]):
 
 
 def shell_history(args: list[str]) -> int:
-    l = readline.get_current_history_length() + 1
+    """A builtin command similar to Bash's 'history' command.
+
+    Currently, the history shows up in reversed order compared to Bash's version (most recent items first)
+
+    Args:
+        args (list[str]): Arguments to be received by the command.
+
+    Returns:
+        int: The number of added history items to the history file (if any).
+    """
+    l = len(list(ShellContext.history.load_history_strings()))
 
     if "-r" in args:
         try:
             i = args.index("-r")
             f = None if i + 1 >= len(args) else args[i + 1]
-            readline.read_history_file(f)  # must be a readline-created history file?
+            if f:
+                ShellContext.history = FileHistory(f)
+
+            return 0
 
         except ValueError:
             pass
@@ -145,7 +161,23 @@ def shell_history(args: list[str]) -> int:
         try:
             i = args.index("-w")
             f = None if i + 1 >= len(args) else args[i + 1]
-            readline.write_history_file(f)  # must be a readline-created history file?
+            if f:
+                # Overwrite the target file with the current history, matching
+                # readline.write_history_file semantics.
+                try:
+                    with open(f, "w", encoding="utf-8") as hist_file:
+                        for line in ShellContext.history.load_history_strings():
+                            # Ensure each history entry is written on its own line.
+                            if line.endswith("\n"):
+                                hist_file.write(line)
+                            else:
+                                hist_file.write(line + "\n")
+                except OSError:
+                    # On write error, indicate that nothing was successfully recorded.
+                    return 0
+                return l
+
+            return 0
 
         except ValueError:
             pass
@@ -157,36 +189,37 @@ def shell_history(args: list[str]) -> int:
         return l
 
     if "-a" in args:
-        # append current history length - last appended items  to history file
+        # append current history length - last appended items to history file
         filename = (
             args[args.index("-a") + 1] if len(args) > args.index("-a") + 1 else None
         )
         if not filename:
             return 0  # no file specified; do nothing
-        try:
-            if l - ShellContext.hist_appended_items - 1 > 0:
-                readline.append_history_file(
-                    l - ShellContext.hist_appended_items, filename
-                )
-
-        except FileNotFoundError:
-            # create file before appending
-            open(filename, "a").close()
-            if l - ShellContext.hist_appended_items - 1 > 0:
-                readline.append_history_file(
-                    l - ShellContext.hist_appended_items, filename
-                )
+        # try:
+        if l - ShellContext.hist_appended_items - 1 > 0:
+            # readline.append_history_file(
+            #     l - ShellContext.hist_appended_items, filename
+            # )
+            save_history = FileHistory(filename)
+            # TODO
+            s = ShellContext.history.get_strings()
+            for line in s[l - ShellContext.hist_appended_items :]:
+                save_history.store_string(line)
 
         return l - ShellContext.hist_appended_items
 
-    start = int(next(filter(lambda x: x.isnumeric(), args), l))  # history <n>
+    if "-c" in args:
+        open(ShellContext.env_HISTFILE, "w").close()
+        return 0
 
+    n = int(next(filter(lambda x: x.isnumeric(), args), l))  # history <n>
+
+    items = list(ShellContext.history.load_history_strings())
     # print cmd index and input
-    for i in range(l - start, l):  # 1-indexed
-        hist_cmd: str | None = readline.get_history_item(
-            i
-        )  # can return None despite type hinting
-        if hist_cmd:
-            print(f"{i} {hist_cmd}")
+    num_to_print = min(l, n)
+    for i in range(num_to_print):  # 1-indexed
+        hist_cmd = items[i]
+        print(f"{i} {hist_cmd}")
 
+    # no items are appended to the history file
     return 0

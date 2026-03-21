@@ -1,11 +1,12 @@
 import os
+from prompt_toolkit.history import FileHistory
 
 
 class ShellContext:
     hist_appended_items: int
     _env: dict[str, str]
     env_HISTFILE: str
-    # readline.get_line_buffer()
+    history: FileHistory
 
     @staticmethod
     def get_input_buffer() -> str:
@@ -20,6 +21,7 @@ class ShellContext:
         cls.env_HISTFILE = cls._env.get(
             "HISTFILE", os.path.expanduser("~/.shell_history")
         )
+        cls.history = FileHistory(cls.env_HISTFILE)
 
     def __init__(self) -> None:
         raise NotImplementedError(
