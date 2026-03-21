@@ -241,7 +241,7 @@ class BuiltinCommand(Command):
         self._redirect_streams()
         match self.cmd:
             case bc.BuiltinCommands.EXIT.value:
-                bc.shell_exit()
+                bc.shell_exit(0)
             case bc.BuiltinCommands.ECHO.value:
                 bc.shell_echo(self.args)
             case bc.BuiltinCommands.TYPE.value:

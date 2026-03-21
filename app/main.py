@@ -7,6 +7,7 @@ from prompt_toolkit.styles.pygments import style_from_pygments_cls
 from pygments.styles import get_style_by_name
 from prompt_toolkit.auto_suggest import AutoSuggestFromHistory
 from app.shell_context import ShellContext
+from app.builtin_commands import shell_exit
 
 
 def main():
@@ -23,13 +24,18 @@ def main():
 
     # begin repl with unprivileged user tag
     while True:
-        # read user input
-        full_cmd: str = session.prompt(
-            message="$ ",
-            lexer=PygmentsLexer(BashLexer),
-            style=style,
-            include_default_pygments_style=False,
-        )
+        try:
+            # read user input
+            full_cmd: str = session.prompt(
+                message="$ ",
+                lexer=PygmentsLexer(BashLexer),
+                style=style,
+                include_default_pygments_style=False,
+            )
+        except KeyboardInterrupt:  # CTRL+C
+            continue
+        except EOFError:  # CTRL+D
+            shell_exit(0)
 
         cmd_list: list[Command] = CommandFactory.build(full_cmd)
 

@@ -29,13 +29,13 @@ def is_builtin_command(cmd_name: str | None) -> bool:
     return cmd_name in [bc.value for bc in BuiltinCommands]
 
 
-def shell_exit():
+def shell_exit(status: int):
     """Exits the shell.
 
     Since history is saved line by line on disk every time,
     it should already be updated without explicitly appending to the history file.
     """
-    exit(0)
+    exit(status)
 
 
 def shell_echo(args: list[str]):
@@ -176,7 +176,7 @@ def shell_history(args: list[str]) -> int:
                     # On write error, indicate that nothing was successfully recorded.
                     return 0
                 return l
-            
+
             return 0
 
         except ValueError:
