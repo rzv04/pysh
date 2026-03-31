@@ -1,6 +1,6 @@
 version = 1
 revision = 3
-requires-python = ">=3.14"
+requires-python = ">=3.10"
 
 [[package]]
 name = "prompt-toolkit"
@@ -34,8 +34,8 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "prompt-toolkit", specifier = ">=3.0.52" },
-    { name = "pygments", specifier = ">=2.19.2" },
+    { name = "prompt-toolkit" },
+    { name = "pygments" },
 ]
 
 [[package]]

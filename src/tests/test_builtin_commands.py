@@ -58,7 +58,7 @@ class TestBuiltinCommands(unittest.TestCase):
     def setUp(self):
         _clear_io()
         # prepare prompt input patcher
-        self.patcher = patch("app.main.PromptSession")
+        self.patcher = patch("pysh.main.PromptSession")
         self.MockPromptSession = self.patcher.start()
         self.addCleanup(self.patcher.stop)
         self.session = self.MockPromptSession.return_value
